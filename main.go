@@ -1,4 +1,4 @@
-package qrack
+package main
 
 import (
 	"bufio"
