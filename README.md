@@ -7,7 +7,10 @@ qrack is a tool that I wrote to solve a CTF challenge :P
 
 I will probably improve some of this code someday...
 
-## Usage
+## 📽️ Demo
+soon ...
+
+## 📖 Usage
 ```sh
 ./qrack --dictionary <dictionary path> --binary <binary path> --pattern <flag pattern>
 ```
