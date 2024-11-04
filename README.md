@@ -1,5 +1,9 @@
 # qrack
-Simple bruteforcer for CrackMe binaries
+
+## ✒️ Description
+> Simple bruteforcer for CrackMe binaries
+
+qrack is a tool that I wrote to solve a CTF challenge :P
 
 ## Usage
 ```sh
