@@ -10,6 +10,11 @@ I will probably improve some of this code someday...
 ## 📽️ Demo
 soon ...
 
+## ⚒️ To build
+```sh
+go build
+```
+
 ## 📖 Usage
 ```sh
 ./qrack --dictionary <dictionary path> --binary <binary path> --pattern <flag pattern>
