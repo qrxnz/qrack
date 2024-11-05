@@ -7,9 +7,6 @@ qrack is a tool that I wrote to solve a CTF challenge :P
 
 I will probably improve some of this code someday...
 
-## 📽️ Demo
-soon ...
-
 ## ⚒️ To build
 ```sh
 go build
