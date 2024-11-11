@@ -9,7 +9,7 @@ I will probably improve some of this code someday...
 
 ## ⚒️ To build
 ```sh
-go build
+go build -o ./qrack
 ```
 
 ## 📖 Usage
