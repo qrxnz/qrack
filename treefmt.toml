@@ -1,0 +1,11 @@
+[formatter.nix]
+command = "alejandra"
+includes = ["*.nix"]
+
+[formatter.go]
+command = "gofmt"
+includes = ["*.go"]
+
+[formatter.markdown]
+command = "mdformat"
+includes = ["*.md"]
