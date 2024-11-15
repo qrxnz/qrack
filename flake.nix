@@ -16,7 +16,12 @@
         pkgs.mkShell
           {
             nativeBuildInputs = with pkgs; [
+              # Go
               go
+              gopls
+              delve
+              
+              # Others
               just
               watchexec
             ];
