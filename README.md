@@ -4,10 +4,6 @@
 
 > Simple bruteforcer for CrackMe binaries
 
-qrack is a tool that I wrote to solve a CTF challenge :P
-
-I will probably improve some of this code someday...
-
 ## ⚒️ To build
 
 ```sh
@@ -19,3 +15,10 @@ go build -o ./qrack
 ```sh
 ./qrack --dictionary <dictionary path> --binary <binary path> --pattern <flag pattern>
 ```
+
+example:
+
+```sh
+./qrack --dictionary /usr/share/wordlists/rockyou.txt --binary ./example_crackme/test_crackme --pattern "Password"
+```
+
