@@ -10,7 +10,7 @@
 go build -o ./qrack
 ```
 
-Or you can use just
+Or you can use just:
 
 ```sh
 just
