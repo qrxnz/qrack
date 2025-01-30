@@ -4,6 +4,8 @@
 
 > Simple bruteforcer for CrackMe binaries
 
+https://github.com/user-attachments/assets/8ad86144-5839-4a16-ad60-f6797c90dd6b
+
 ## ⚒️ To build
 
 ```sh
