@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define PASSWORD "arisfertidis"
+#define PASSWORD "sagar"
 
 int main(int argc, char *argv[]) {
     // Check if the user provided a password as an argument
