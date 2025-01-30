@@ -10,6 +10,12 @@
 go build -o ./qrack
 ```
 
+Or you can use just
+
+```sh
+just
+```
+
 ## 📖 Usage
 
 ```sh
