@@ -10,7 +10,102 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/charmbracelet/bubbles/progress"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
+
+var (
+	docStyle      = lipgloss.NewStyle().Margin(1, 2)
+	foundStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("82"))
+	notFoundStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	errorStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
+	quitTextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+)
+
+type model struct {
+	totalPasswords     int
+	processedPasswords int64
+	foundPassword      string
+	err                error
+	progress           progress.Model
+	quitting           bool
+	width              int
+	height             int
+}
+
+type progressMsg struct{ processed int64 }
+type foundMsg struct{ password string }
+type errorMsg struct{ err error }
+
+func (m model) Init() tea.Cmd {
+	return nil
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "ctrl+c":
+			m.quitting = true
+			return m, tea.Quit
+		default:
+			return m, nil
+		}
+
+	case tea.WindowSizeMsg:
+		m.width = msg.Width
+		m.height = msg.Height
+		m.progress.Width = msg.Width - 10
+		return m, nil
+
+	case progressMsg:
+		atomic.StoreInt64(&m.processedPasswords, msg.processed)
+		cmd := m.progress.SetPercent(float64(msg.processed) / float64(m.totalPasswords))
+		return m, cmd
+
+	case foundMsg:
+		m.foundPassword = msg.password
+		m.quitting = true
+		return m, tea.Quit
+
+	case errorMsg:
+		m.err = msg.err
+		m.quitting = true
+		return m, tea.Quit
+
+	case progress.FrameMsg:
+		progressModel, cmd := m.progress.Update(msg)
+		m.progress = progressModel.(progress.Model)
+		return m, cmd
+
+	default:
+		return m, nil
+	}
+}
+
+func (m model) View() string {
+	if m.quitting {
+		var s string
+		if m.err != nil {
+			s = errorStyle.Render(fmt.Sprintf("Error: %v", m.err))
+		} else if m.foundPassword != "" {
+			s = foundStyle.Render(fmt.Sprintf("Password found: %s", m.foundPassword))
+		} else {
+			s = notFoundStyle.Render("Password not found.")
+		}
+		return docStyle.Render(s)
+	}
+
+	return docStyle.Render(
+		"Qrack is running...\n\n" +
+			m.progress.View() + "\n\n" +
+			fmt.Sprintf("Processed: %d/%d", atomic.LoadInt64(&m.processedPasswords), m.totalPasswords) + "\n\n" +
+			quitTextStyle.Render("(Press 'q' to quit)"),
+	)
+}
+
 
 func main() {
 	var dictPath, binPath, pattern string
@@ -20,11 +115,10 @@ func main() {
 	flag.StringVar(&binPath, "binary", "", "binary path")
 	flag.StringVar(&pattern, "pattern", "Password correct!", "flag pattern")
 	flag.IntVar(&concurrency, "concurrency", 4, "concurrency level")
-
 	flag.Parse()
 
-	if dictPath == "" || binPath == "" || pattern == "" {
-		fmt.Println("Usage: qrack --dictionary <dict_path> --binary <binary_path> --pattern <flag_pattern> [--concurrency <level>]")
+	if dictPath == "" || binPath == "" {
+		fmt.Println("Usage: qrack --dictionary <dict_path> --binary <binary_path> [--pattern <flag_pattern>] [--concurrency <level>]")
 		os.Exit(1)
 	}
 
@@ -37,34 +131,84 @@ func main() {
 
 	totalPasswords, err := countLines(dictFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Warning: Failed to count lines in dictionary, progress bar might be inaccurate: %v\n", err)
-		totalPasswords = -1
+		fmt.Fprintf(os.Stderr, "failed to count lines in dictionary: %v\n", err)
+		os.Exit(1)
 	}
 	_, err = dictFile.Seek(0, 0)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to seek to the beginning of dictionary file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to seek to the beginning of dictionary file: %v\n", err)
 		os.Exit(1)
 	}
 
-	scanner := bufio.NewScanner(dictFile)
-	// Increased buffer size for passwordChan
-	passwordChan := make(chan string, concurrency*10) // Increased buffer size
-	foundChan := make(chan string)
-	var wg sync.WaitGroup
-	var attempts int64
-	var processedPasswords int64
+	p := tea.NewProgram(model{
+		totalPasswords: totalPasswords,
+		progress:       progress.New(progress.WithDefaultGradient()),
+	})
 
-	// Initialize progress bar
-	if totalPasswords > 0 {
-		updateProgressBar(0, totalPasswords)
-	} else {
-		fmt.Printf("\rProgress: [Counting lines...] 0%%\r")
+	go runCracker(p, dictPath, binPath, pattern, concurrency)
+
+	if _, err := p.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "Alas, there's been an error: %v", err)
+		os.Exit(1)
 	}
+}
 
-	// Start worker goroutines
+func runCracker(p *tea.Program, dictPath, binPath, pattern string, concurrency int) {
+	dictFile, err := os.Open(dictPath)
+	if err != nil {
+		p.Send(errorMsg{err})
+		return
+	}
+	defer dictFile.Close()
+
+	scanner := bufio.NewScanner(dictFile)
+	passwordChan := make(chan string, concurrency*10)
+	foundChan := make(chan string, 1)
+	var wg sync.WaitGroup
+	var processedPasswords int64
+	var once sync.Once
+
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
-		go worker(binPath, pattern, passwordChan, foundChan, &wg, &attempts, totalPasswords, &processedPasswords)
+		go func() {
+			defer wg.Done()
+			for password := range passwordChan {
+				select {
+				case <-foundChan:
+					// Drain the channel if password found
+					return
+				default:
+				}
+
+				cmd := exec.Command(binPath, password)
+				output, err := cmd.CombinedOutput()
+				if err != nil {
+					// Send the error to the main model to be displayed.
+					// We don't return here because some programs might return a non-zero exit code
+					// but still produce the output we need.
+					p.Send(errorMsg{fmt.Errorf("cmd execution for password '%s' failed: %w, output: %s", password, err, string(output))})
+				}
+
+				if strings.Contains(string(output), pattern) {
+					once.Do(func() {
+						foundChan <- password
+						close(foundChan)
+					})
+					return
+				}
+
+				// Check if another worker found the password before we send a progress update.
+				select {
+				case <-foundChan:
+					// Password was found by another goroutine. Exit.
+					return
+				default:
+					// No password yet, send progress.
+					atomic.AddInt64(&processedPasswords, 1)
+					p.Send(progressMsg{processed: atomic.LoadInt64(&processedPasswords)})
+				}
+			}
+		}()
 	}
 
 	go func() {
@@ -74,35 +218,17 @@ func main() {
 		close(passwordChan)
 	}()
 
-	foundPassword := ""
-
 	select {
-	case foundPassword = <-foundChan:
-		fmt.Printf("\nPassword found: %s\n", foundPassword)
-		// No need to wait for workers to finish, password is found.
+	case password := <-foundChan:
+		p.Send(foundMsg{password: password})
 	case <-waitWorkers(&wg):
-		if totalPasswords > 0 {
-			updateProgressBar(totalPasswords, totalPasswords)
-		} else {
-			fmt.Printf("\rProgress: [??????????] 100%%\r\n")
-		}
-
-		if scanner.Err() != nil {
-			fmt.Fprintf(os.Stderr, "failed to read dictionary file: %v\n", scanner.Err())
-			os.Exit(1)
-		}
-		fmt.Println("\nPassword not found.")
-	}
-
-	if foundPassword != "" {
-		os.Exit(0)
-	} else {
-		os.Exit(1)
+		// All workers finished, password not found
+		p.Send(foundMsg{password: ""})
 	}
 }
 
-func waitWorkers(wg *sync.WaitGroup) <-chan bool {
-	done := make(chan bool)
+func waitWorkers(wg *sync.WaitGroup) <-chan struct{} {
+	done := make(chan struct{})
 	go func() {
 		wg.Wait()
 		close(done)
@@ -110,118 +236,17 @@ func waitWorkers(wg *sync.WaitGroup) <-chan bool {
 	return done
 }
 
-func worker(binPath, pattern string, passwordChan <-chan string, foundChan chan<- string, wg *sync.WaitGroup, attempts *int64, totalPasswords int, processedPasswords *int64) {
-	defer wg.Done()
-	for password := range passwordChan {
-		atomic.AddInt64(attempts, 1)
-
-		cmd := exec.Command(binPath, password)
-
-		stdout, err := cmd.StdoutPipe()
-		if err != nil {
-			// log.Printf("failed to create stdout pipe: %v", err)
-			continue
-		}
-
-		stderr, err := cmd.StderrPipe()
-		if err != nil {
-			// log.Printf("failed to create stderr pipe: %v", err)
-			continue
-		}
-
-		if err := cmd.Start(); err != nil {
-			// log.Printf("failed to start command: %v", err)
-			continue
-		}
-
-		// Buffer outputChan, errorChan, waitChan
-		outputChan := make(chan []byte, 1) // Buffered channels
-		errorChan := make(chan []byte, 1)  // Buffered channels
-		waitChan := make(chan error, 1)    // Buffered channels
-		var ioWaitGroup sync.WaitGroup
-
-		ioWaitGroup.Add(1)
-		go func() {
-			defer ioWaitGroup.Done()
-			outputBytes, readErr := io.ReadAll(stdout)
-			if readErr != nil {
-				// log.Printf("failed to read stdout: %v", readErr)
-			}
-			outputChan <- outputBytes
-			close(outputChan) // Close outputChan after reading stdout
-		}()
-
-		ioWaitGroup.Add(1)
-		go func() {
-			defer ioWaitGroup.Done()
-			errorBytes, readErr := io.ReadAll(stderr)
-			if readErr != nil {
-				// log.Printf("failed to read stderr: %v", readErr)
-			}
-			errorChan <- errorBytes
-			close(errorChan) // Close errorChan after reading stderr
-		}()
-
-		go func() {
-			defer close(waitChan) // Ensure waitChan is closed when cmd.Wait finishes
-			waitErr := cmd.Wait()
-			waitChan <- waitErr
-		}()
-
-		ioWaitGroup.Wait() // Wait for io.ReadAll goroutines to finish
-		output := <-outputChan
-		errorOutput := <-errorChan
-		<-waitChan // Wait for cmd.Wait to finish (and channel to close)
-
-		if strings.Contains(string(output), pattern) {
-			fmt.Printf("\nPassword: %s\nStdout: %s\nStderr: %s\n", password, output, errorOutput)
-			foundChan <- password
-			return
-		}
-		atomic.AddInt64(processedPasswords, 1)
-		if totalPasswords > 0 {
-			updateProgressBar(int(atomic.LoadInt64(processedPasswords)), totalPasswords)
-		} else if totalPasswords == -1 {
-			updateIndeterminateProgressBar(int(atomic.LoadInt64(processedPasswords)))
-		}
-	}
-}
-
 func countLines(file *os.File) (int, error) {
 	reader := bufio.NewReader(file)
 	count := 0
 	for {
 		_, err := reader.ReadString('\n')
+		count++
 		if err == io.EOF {
-			break
+			return count, nil
 		}
 		if err != nil {
 			return 0, err
 		}
-		count++
 	}
-	return count, nil
-}
-
-func updateProgressBar(current int, total int) {
-	if total <= 0 {
-		return
-	}
-	progress := float64(current) / float64(total)
-	barLength := 30
-	filledLength := int(progress * float64(barLength))
-	bar := strings.Repeat("=", filledLength) + strings.Repeat(" ", barLength-filledLength)
-	percentage := int(progress * 100)
-	fmt.Printf("\rProgress: [%s] %d%% (%d/%d)", bar, percentage, current, total)
-}
-
-var indeterminateCounter int
-
-func updateIndeterminateProgressBar(current int) {
-	animationFrames := []string{"\\", "|", "/", "-"}
-	frameIndex := indeterminateCounter % len(animationFrames)
-	bar := animationFrames[frameIndex] + strings.Repeat(".", 9)
-	percentage := "?"
-	fmt.Printf("\rProgress: [%s] %s%% (Attempt %d)", bar, percentage, current)
-	indeterminateCounter++
 }
