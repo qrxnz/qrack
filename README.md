@@ -1,18 +1,22 @@
 # qrack
 
+[![Go Workflow](https://github.com/qrxnz/qrack/actions/workflows/go.yml/badge.svg)](https://github.com/qrxnz/qrack/actions/workflows/go.yml)
+
 ## ✒️ Description
 
-> Simple bruteforcer for CrackMe binaries
+qrack is a simple bruteforcer for cracking simple binary executable files, commonly known as "CrackMe" challenges. It features a user-friendly terminal interface built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
-https://github.com/user-attachments/assets/8ad86144-5839-4a16-ad60-f6797c90dd6b
+## 📦 Installation
 
-## ⚒️ To build
+### Build from source
+
+To build the project, you need to have Go installed.
 
 ```sh
 go build -o ./qrack
 ```
 
-Or you can use just:
+Alternatively, if you have `just` installed, you can simply run:
 
 ```sh
 just
@@ -20,13 +24,31 @@ just
 
 ## 📖 Usage
 
-```sh
-./qrack --dictionary <dictionary path> --binary <binary path> --pattern <flag pattern>
-```
-
-example:
+Run the application with the following command, providing the necessary flags.
 
 ```sh
-./qrack --dictionary /usr/share/wordlists/rockyou.txt --binary ./example_crackme/test_crackme --pattern "Password"
+./qrack --dictionary <path> --binary <path> [flags]
 ```
 
+### Flags
+
+| Flag | Description | Default | Required |
+| --------------- | ----------------------------------------------- | --------------------- | -------- |
+| `--dictionary` | Path to the dictionary file (wordlist). | | Yes |
+| `--binary` | Path to the binary executable to crack. | | Yes |
+| `--pattern` | The success pattern to look for in the output. | "Password correct!" | No |
+| `--concurrency` | Number of concurrent workers to use. | 4 | No |
+
+### Example
+
+```sh
+./qrack \
+  --dictionary /usr/share/wordlists/rockyou.txt \
+  --binary ./example_crackme/test_crackme \
+  --pattern "Password" \
+  --concurrency 8
+```
+
+## 📜 License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
