@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -62,8 +61,27 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case progressMsg:
 		atomic.StoreInt64(&m.processedPasswords, msg.processed)
-		cmd := m.progress.SetPercent(float64(msg.processed) / float64(m.totalPasswords))
-		return m, cmd
+		percent := float64(msg.processed) / float64(m.totalPasswords)
+		if percent > 1.0 {
+			percent = 1.0
+		}
+
+		// Create the command to set the percentage
+		cmd := m.progress.SetPercent(percent)
+
+		// If there's a command, execute it and update the progress model
+		if cmd != nil {
+			// Get the message from the command
+			msgForProgressBar := cmd()
+			// Update the progress bar model
+			updatedProgressModel, newCmd := m.progress.Update(msgForProgressBar)
+			// Assign the new model back
+			m.progress = updatedProgressModel.(progress.Model)
+			// Return the new command
+			return m, newCmd
+		}
+
+		return m, nil
 
 	case foundMsg:
 		m.foundPassword = msg.password
@@ -166,7 +184,8 @@ func runCracker(p *tea.Program, dictPath, binPath, pattern string, concurrency i
 	foundChan := make(chan string, 1)
 	var wg sync.WaitGroup
 	var processedPasswords int64
-	var once sync.Once
+	var foundOnce, errorOnce sync.Once
+	const progressBatchSize = 100
 
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
@@ -175,7 +194,6 @@ func runCracker(p *tea.Program, dictPath, binPath, pattern string, concurrency i
 			for password := range passwordChan {
 				select {
 				case <-foundChan:
-					// Drain the channel if password found
 					return
 				default:
 				}
@@ -183,29 +201,24 @@ func runCracker(p *tea.Program, dictPath, binPath, pattern string, concurrency i
 				cmd := exec.Command(binPath, password)
 				output, err := cmd.CombinedOutput()
 				if err != nil {
-					// Send the error to the main model to be displayed.
-					// We don't return here because some programs might return a non-zero exit code
-					// but still produce the output we need.
-					p.Send(errorMsg{fmt.Errorf("cmd execution for password '%s' failed: %w, output: %s", password, err, string(output))})
+					errorOnce.Do(func() {
+						p.Send(errorMsg{fmt.Errorf("cmd execution for password '%s' failed: %w, output: %s", password, err, string(output))})
+						close(foundChan) // Signal other workers to stop
+					})
+					return
 				}
 
 				if strings.Contains(string(output), pattern) {
-					once.Do(func() {
-						foundChan <- password
+					foundOnce.Do(func() {
+						p.Send(foundMsg{password: password})
 						close(foundChan)
 					})
 					return
 				}
 
-				// Check if another worker found the password before we send a progress update.
-				select {
-				case <-foundChan:
-					// Password was found by another goroutine. Exit.
-					return
-				default:
-					// No password yet, send progress.
-					atomic.AddInt64(&processedPasswords, 1)
-					p.Send(progressMsg{processed: atomic.LoadInt64(&processedPasswords)})
+				processed := atomic.AddInt64(&processedPasswords, 1)
+				if processed%progressBatchSize == 0 {
+					p.Send(progressMsg{processed: processed})
 				}
 			}
 		}()
@@ -218,13 +231,14 @@ func runCracker(p *tea.Program, dictPath, binPath, pattern string, concurrency i
 		close(passwordChan)
 	}()
 
-	select {
-	case password := <-foundChan:
-		p.Send(foundMsg{password: password})
-	case <-waitWorkers(&wg):
-		// All workers finished, password not found
-		p.Send(foundMsg{password: ""})
-	}
+	wg.Wait()
+
+	// Send final status update after all workers are done
+	foundOnce.Do(func() {
+		// Ensure the progress bar reaches 100%
+		p.Send(progressMsg{processed: atomic.LoadInt64(&processedPasswords)})
+		p.Send(foundMsg{password: ""}) // Not found
+	})
 }
 
 func waitWorkers(wg *sync.WaitGroup) <-chan struct{} {
@@ -237,16 +251,13 @@ func waitWorkers(wg *sync.WaitGroup) <-chan struct{} {
 }
 
 func countLines(file *os.File) (int, error) {
-	reader := bufio.NewReader(file)
+	scanner := bufio.NewScanner(file)
 	count := 0
-	for {
-		_, err := reader.ReadString('\n')
+	for scanner.Scan() {
 		count++
-		if err == io.EOF {
-			return count, nil
-		}
-		if err != nil {
-			return 0, err
-		}
 	}
+	if err := scanner.Err(); err != nil {
+		return 0, err
+	}
+	return count, nil
 }
