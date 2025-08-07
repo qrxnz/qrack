@@ -4,6 +4,8 @@
 
 ## ✒️ Description
 
+> Simple bruteforcer for CrackMe binaries / CTF challegne solver
+
 qrack is a simple bruteforcer for cracking simple binary executable files, commonly known as "CrackMe" challenges. It features a user-friendly terminal interface built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
 - 📺 Demo
