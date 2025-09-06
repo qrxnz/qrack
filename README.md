@@ -28,6 +28,49 @@ Alternatively, if you have `just` installed, you can simply run:
 just
 ```
 
+### Using Nix ❄️
+
+-   Try it without installing:
+
+```sh
+nix run github:qrxnz/qrack
+```
+
+-   Installation:
+
+Add input in your flake like:
+
+```nix
+{
+ inputs = {
+   nveem = {
+     url = "github:qrxnz/qrack";
+     inputs.nixpkgs.follows = "nixpkgs";
+   };
+ };
+}
+```
+
+With the input added you can reference it directly:
+
+```nix
+{ inputs, system, ... }:
+{
+  # NixOS
+  environment.systemPackages = [ inputs.qrack.packages.${pkgs.system}.default ];
+  # home-manager
+  home.packages = [ inputs.qrack.packages.${pkgs.system}.default ];
+}
+```
+
+or
+
+You can install this package imperatively with the following command;
+
+```nix
+nix profile install github:qrxnz/qrack
+```
+
 ## 📖 Usage
 
 Run the application with the following command, providing the necessary flags.
