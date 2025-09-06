@@ -9,7 +9,17 @@
     utils.lib.eachDefaultSystem (
       system: let
         pkgs = import nixpkgs {inherit system;};
-      in {
+      in rec {
+        packages.default = pkgs.buildGoModule rec {
+          pname = "qrack";
+          version = "2.0.1";
+          src = self;
+
+          vendorHash = "sha256-GqAk9SdbBMGGo6IQp7CMi5LjWf/IFB897vcd4XC867k=";
+        };
+
+        defaultPackage = packages.default;
+
         devShells.default = pkgs.mkShell rec {
           buildInputs = with pkgs; [
             # Go
@@ -28,10 +38,5 @@
           ];
         };
       }
-    )
-    // {
-      overlays.default = self: pkgs: {
-        hello = self.packages."${pkgs.system}".hello;
-      };
-    };
+    );
 }
