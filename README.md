@@ -8,7 +8,7 @@
 
 qrack is a simple bruteforcer for cracking simple binary executable files, commonly known as "CrackMe" challenges. It features a user-friendly terminal interface built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
-- 📺 Demo
+-   📺 Demo
 
 https://github.com/user-attachments/assets/f0c02036-e36c-4024-b16a-bacc6e02126f
 
@@ -19,7 +19,7 @@ https://github.com/user-attachments/assets/f0c02036-e36c-4024-b16a-bacc6e02126f
 To build the project, you need to have Go installed.
 
 ```sh
-go build -o ./qrack
+go build .
 ```
 
 Alternatively, if you have `just` installed, you can simply run:
@@ -38,12 +38,12 @@ Run the application with the following command, providing the necessary flags.
 
 ### Flags
 
-| Flag | Description | Default | Required |
-| --------------- | ----------------------------------------------- | --------------------- | -------- |
-| `--dictionary` | Path to the dictionary file (wordlist). | | Yes |
-| `--binary` | Path to the binary executable to crack. | | Yes |
-| `--pattern` | The success pattern to look for in the output. | "Password correct!" | No |
-| `--concurrency` | Number of concurrent workers to use. | 4 | No |
+| Flag            | Description                                    | Default             | Required |
+| --------------- | ---------------------------------------------- | ------------------- | -------- |
+| `--dictionary`  | Path to the dictionary file (wordlist).        |                     | Yes      |
+| `--binary`      | Path to the binary executable to crack.        |                     | Yes      |
+| `--pattern`     | The success pattern to look for in the output. | "Password correct!" | No       |
+| `--concurrency` | Number of concurrent workers to use.           | 4                   | No       |
 
 ### Example
 

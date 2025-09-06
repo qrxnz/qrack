@@ -1,4 +1,4 @@
 build:
-    go build -o ./qrack
+    go build .
 
 run: build
