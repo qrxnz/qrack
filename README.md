@@ -25,7 +25,7 @@ go build .
 Alternatively, if you have `just` installed, you can simply run:
 
 ```sh
-just
+just build
 ```
 
 ### Using Nix ❄️
@@ -65,7 +65,7 @@ With the input added you can reference it directly:
 
 or
 
-You can install this package imperatively with the following command;
+You can install this package imperatively with the following command:
 
 ```nix
 nix profile install github:qrxnz/qrack
