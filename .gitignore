@@ -1,3 +1,5 @@
 .direnv/
 qrack
 example_crackme
+# Added by goreleaser init:
+dist/
