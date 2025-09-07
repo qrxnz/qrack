@@ -2,13 +2,11 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
-	"runtime"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -134,7 +132,7 @@ func main() {
 	flag.StringVar(&dictPath, "dictionary", "", "dictionary path")
 	flag.StringVar(&binPath, "binary", "", "binary path")
 	flag.StringVar(&pattern, "pattern", "Password correct!", "flag pattern")
-	flag.IntVar(&concurrency, "concurrency", runtime.NumCPU(), "concurrency level")
+	flag.IntVar(&concurrency, "concurrency", 4, "concurrency level")
 	flag.Parse()
 
 	if dictPath == "" || binPath == "" {
@@ -142,18 +140,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	passwords, err := readPasswords(dictPath)
+	dictFile, err := os.Open(dictPath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to read dictionary file: %v\n", err)
+		fmt.Fprintf(os.Stderr, "failed to open dictionary file: %v\n", err)
+		os.Exit(1)
+	}
+	defer dictFile.Close()
+
+	totalPasswords, err := countLines(dictFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to count lines in dictionary: %v\n", err)
+		os.Exit(1)
+	}
+	_, err = dictFile.Seek(0, 0)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to seek to the beginning of dictionary file: %v\n", err)
 		os.Exit(1)
 	}
 
 	p := tea.NewProgram(model{
-		totalPasswords: len(passwords),
+		totalPasswords: totalPasswords,
 		progress:       progress.New(progress.WithDefaultGradient()),
 	})
 
-	go runCracker(p, passwords, binPath, pattern, concurrency)
+	go runCracker(p, dictPath, binPath, pattern, concurrency)
 
 	if _, err := p.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "Alas, there's been an error: %v", err)
@@ -161,13 +171,22 @@ func main() {
 	}
 }
 
-func runCracker(p *tea.Program, passwords []string, binPath, pattern string, concurrency int) {
+func runCracker(p *tea.Program, dictPath, binPath, pattern string, concurrency int) {
+	dictFile, err := os.Open(dictPath)
+	if err != nil {
+		p.Send(errorMsg{err})
+		return
+	}
+	defer dictFile.Close()
+
+	scanner := bufio.NewScanner(dictFile)
 	passwordChan := make(chan string, concurrency*10)
 	foundChan := make(chan string, 1)
 	var wg sync.WaitGroup
 	var processedPasswords int64
 	var foundOnce, errorOnce sync.Once
 	const progressBatchSize = 100
+	bytePattern := []byte(pattern)
 
 	for i := 0; i < concurrency; i++ {
 		wg.Add(1)
@@ -190,7 +209,7 @@ func runCracker(p *tea.Program, passwords []string, binPath, pattern string, con
 					return
 				}
 
-				if strings.Contains(string(output), pattern) {
+				if bytes.Contains(output, bytePattern) {
 					foundOnce.Do(func() {
 						p.Send(foundMsg{password: password})
 						close(foundChan)
@@ -207,8 +226,8 @@ func runCracker(p *tea.Program, passwords []string, binPath, pattern string, con
 	}
 
 	go func() {
-		for _, pass := range passwords {
-			passwordChan <- pass
+		for scanner.Scan() {
+			passwordChan <- scanner.Text()
 		}
 		close(passwordChan)
 	}()
@@ -232,24 +251,14 @@ func waitWorkers(wg *sync.WaitGroup) <-chan struct{} {
 	return done
 }
 
-func readPasswords(filePath string) ([]string, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, err
+func countLines(file *os.File) (int, error) {
+	scanner := bufio.NewScanner(file)
+	count := 0
+	for scanner.Scan() {
+		count++
 	}
-	defer file.Close()
-
-	var passwords []string
-	reader := bufio.NewReader(file)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-		passwords = append(passwords, strings.TrimSpace(line))
-		if err == io.EOF {
-			break
-		}
+	if err := scanner.Err(); err != nil {
+		return 0, err
 	}
-	return passwords, nil
+	return count, nil
 }
