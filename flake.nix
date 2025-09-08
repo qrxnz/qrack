@@ -33,8 +33,7 @@
             alejandra
 
             # Others
-            just
-            watchexec
+            go-task
           ];
         };
       }
