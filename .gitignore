@@ -2,6 +2,7 @@
 qrack
 example_crackme
 bin/
+.env
 
 # Added by goreleaser init:
 dist/
