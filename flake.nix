@@ -12,7 +12,7 @@
       in rec {
         packages.default = pkgs.buildGoModule rec {
           pname = "qrack";
-          version = "2.0.5";
+          version = "2.0.6";
           src = self;
 
           vendorHash = "sha256-GqAk9SdbBMGGo6IQp7CMi5LjWf/IFB897vcd4XC867k=";
@@ -28,7 +28,7 @@
             delve
 
             # Formatters
-            treefmt2
+            treefmt
             mdformat
             alejandra
 
