@@ -8,7 +8,7 @@
 
 qrack is a simple bruteforcer for cracking simple binary executable files, commonly known as "CrackMe" challenges. It features a user-friendly terminal interface built with [Bubble Tea](https://github.com/charmbracelet/bubbletea).
 
-<img alt="Image" src="https://github.com/user-attachments/assets/74eaa580-eb53-4da5-b2c9-1fc0b14e65a0" />
+https://github.com/user-attachments/assets/f0c02036-e36c-4024-b16a-bacc6e02126f
 
 ## 📦 Installation
 
