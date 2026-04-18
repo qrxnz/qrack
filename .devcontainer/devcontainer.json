@@ -1,0 +1,15 @@
+{
+  "name": "qrack Dev Container",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.Go"
+      ]
+    }
+  },
+  "remoteUser": "root"
+}

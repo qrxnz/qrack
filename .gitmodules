@@ -1,0 +1,3 @@
+[submodule "example_crackme/rockyou"]
+	path = example_crackme/rockyou
+	url = https://github.com/zacheller/rockyou.git
