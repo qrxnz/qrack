@@ -124,7 +124,6 @@ func (m model) View() string {
 	)
 }
 
-
 func main() {
 	var dictPath, binPath, pattern string
 	var concurrency int
