@@ -42,15 +42,15 @@ task build
 
 ### ❄️ Using Nix
 
-- **Run without installing:**
+-   **Run without installing**
 
 ```bash
 nix run github:qrxnz/qrack
 ```
 
-- **Add to a Nix Flake:**
+-   **Add to a Nix Flake**
 
-Add input in your flake like
+Add input in your flake like:
 
 ```nix
 {
@@ -63,7 +63,7 @@ Add input in your flake like
 }
 ```
 
-With the input added you can reference it directly
+With the input added you can reference it directly:
 
 ```nix
 { inputs, system, ... }:
@@ -75,7 +75,7 @@ With the input added you can reference it directly
 }
 ```
 
-- **Install imperatively:**
+-   **Install imperatively**
 
 ```bash
 nix profile install github:qrxnz/qrack
@@ -91,12 +91,12 @@ Run the application with the following command, providing the necessary flags.
 
 ### Flags
 
-| Flag | Description | Default | Required |
+| Flag            | Description                                    | Default             | Required |
 | --------------- | ---------------------------------------------- | ------------------- | -------- |
-| `--dictionary` | Path to the dictionary file (wordlist). | | Yes |
-| `--binary` | Path to the binary executable to crack. | | Yes |
-| `--pattern` | The success pattern to look for in the output. | "Password correct!" | No |
-| `--concurrency` | Number of concurrent workers to use. | 4 | No |
+| `--dictionary`  | Path to the dictionary file (wordlist).        |                     | Yes      |
+| `--binary`      | Path to the binary executable to crack.        |                     | Yes      |
+| `--pattern`     | The success pattern to look for in the output. | "Password correct!" | No       |
+| `--concurrency` | Number of concurrent workers to use.           | 4                   | No       |
 
 ### Example
 
