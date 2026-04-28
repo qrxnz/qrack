@@ -10,38 +10,52 @@ qrack is a simple bruteforcer for cracking simple binary executable files, commo
 
 https://github.com/user-attachments/assets/f0c02036-e36c-4024-b16a-bacc6e02126f
 
-## 📦 Installation
+## 🛠️ Installation
 
-### Build from source
+### 📦 Binary Releases
 
-To build the project, you need to have Go installed.
+Pre-compiled binaries for Linux, Windows, and macOS are available on the [Releases](https://github.com/qrxnz/qrack/releases) page.
 
-```sh
-go build .
+### 🐹Using Go
+
+You can install `qrack` directly using `go install`:
+
+```bash
+go install github.com/qrxnz/qrack@latest
 ```
 
-Alternatively, if you have `go-task` installed, you can simply run:
+### 🏗️ Build from Source
 
-```sh
+To build from source, you need to have [Go](https://go.dev/) installed.
+
+```bash
+git clone https://github.com/qrxnz/qrack.git
+cd qrack
+go build -o qrack .
+```
+
+Alternatively, if you have [Task](https://taskfile.dev/) installed, you can use:
+
+```bash
 task build
 ```
 
-### Using Nix ❄️
+### ❄️ Using Nix
 
--   Try it without installing:
+-   **Run without installing:**
 
-```sh
+```bash
 nix run github:qrxnz/qrack
 ```
 
--   Installation:
+-   **Add to a Nix Flake:**
 
-Add input in your flake like:
+Add input in your flake like
 
 ```nix
 {
  inputs = {
-   nveem = {
+   qrack = {
      url = "github:qrxnz/qrack";
      inputs.nixpkgs.follows = "nixpkgs";
    };
@@ -49,7 +63,7 @@ Add input in your flake like:
 }
 ```
 
-With the input added you can reference it directly:
+With the input added you can reference it directly
 
 ```nix
 { inputs, system, ... }:
@@ -61,11 +75,9 @@ With the input added you can reference it directly:
 }
 ```
 
-or
+-   **Install imperatively:**
 
-You can install this package imperatively with the following command:
-
-```nix
+```bash
 nix profile install github:qrxnz/qrack
 ```
 
