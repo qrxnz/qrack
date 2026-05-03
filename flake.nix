@@ -32,6 +32,7 @@
             taplo
             alejandra
             prettier
+            dockfmt
 
             # Others
             go-task

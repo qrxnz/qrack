@@ -10,6 +10,11 @@ includes = ["*.go"]
 command = "alejandra"
 includes = ["*.nix"]
 
+[formatter.dockerfile]
+command = "dockfmt"
+options = ["fmt", "--write"]
+includes = ["Dockerfile", "*.Dockerfile", "*.dockerfile"]
+
 [formatter.prettier]
 command = "prettier"
 options = ["--write"]
