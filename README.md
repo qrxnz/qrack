@@ -42,13 +42,13 @@ task build
 
 ### ❄️ Using Nix
 
--   **Run without installing**
+- **Run without installing**
 
 ```bash
 nix run github:qrxnz/qrack
 ```
 
--   **Add to a Nix Flake**
+- **Add to a Nix Flake**
 
 Add input in your flake like:
 
@@ -75,7 +75,7 @@ With the input added you can reference it directly:
 }
 ```
 
--   **Install imperatively**
+- **Install imperatively**
 
 ```bash
 nix profile install github:qrxnz/qrack

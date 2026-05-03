@@ -6,9 +6,7 @@
   },
   "customizations": {
     "vscode": {
-      "extensions": [
-        "golang.Go"
-      ]
+      "extensions": ["golang.Go"]
     }
   },
   "remoteUser": "root"

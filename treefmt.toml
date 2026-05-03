@@ -10,14 +10,12 @@ includes = ["*.go"]
 command = "alejandra"
 includes = ["*.nix"]
 
-[formatter.markdown]
-command = "mdformat"
-includes = ["*.md"]
-
-[formatter.yaml]
+[formatter.prettier]
 command = "prettier"
 options = ["--write"]
-includes = [
-  "*.yaml",
-  "*.yml"
-]
+includes = ["*.json", "*.jsonc", "*.yaml", "*.yml", "*.md"]
+
+[formatter.toml]
+command = "taplo"
+options = ["format"]
+includes = ["*.toml"]

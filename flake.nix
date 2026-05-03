@@ -29,7 +29,7 @@
 
             # Formatters
             treefmt
-            mdformat
+            taplo
             alejandra
             prettier
 
