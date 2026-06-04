@@ -1,6 +1,25 @@
 # qrack
 
-[![Go Workflow](https://github.com/qrxnz/qrack/actions/workflows/go.yml/badge.svg)](https://github.com/qrxnz/qrack/actions/workflows/go.yml)
+<h3 align="center">
+  <div>
+    <a href="https://github.com/qrxnz/qrack/issues">
+        <img src="https://img.shields.io/github/issues/qrxnz/qrack?color=fab387&labelColor=303446&style=for-the-badge">
+    </a>
+    <a href="https://github.com/qrxnz/qrack/stargazers">
+        <img src="https://img.shields.io/github/stars/qrxnz/qrack?color=ca9ee6&labelColor=303446&style=for-the-badge">
+    </a>
+    <a href="https://github.com/qrxnz/qrack">
+        <img src="https://img.shields.io/github/repo-size/qrxnz/qrack?color=ea999c&labelColor=303446&style=for-the-badge">
+    </a>
+    <a href="https://github.com/qrxnz/qrack/actions/workflows/go.yml">
+        <img src="https://img.shields.io/github/actions/workflow/status/qrxnz/qrack/go.yml?color=a6e3a1&labelColor=303446&style=for-the-badge&label=Go%20Workflow">
+    </a>
+    <a href="https://github.com/qrxnz/qrack/blob/main/.github/LICENCE">
+        <img src="https://img.shields.io/static/v1.svg?style=for-the-badge&label=License&message=MIT&logoColor=ca9ee6&colorA=313244&colorB=cba6f7"/>
+    </a>
+    <br>
+    </div>
+</h3>
 
 > Simple bruteforcer for CrackMe binaries / CTF challegne solver
 
