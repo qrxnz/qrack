@@ -8,9 +8,6 @@
     <a href="https://github.com/qrxnz/qrack/stargazers">
         <img src="https://img.shields.io/github/stars/qrxnz/qrack?color=ca9ee6&labelColor=303446&style=for-the-badge">
     </a>
-    <a href="https://github.com/qrxnz/qrack">
-        <img src="https://img.shields.io/github/repo-size/qrxnz/qrack?color=ea999c&labelColor=303446&style=for-the-badge">
-    </a>
     <a href="https://github.com/qrxnz/qrack/actions/workflows/go.yml">
         <img src="https://img.shields.io/github/actions/workflow/status/qrxnz/qrack/go.yml?color=a6e3a1&labelColor=303446&style=for-the-badge&label=Go%20Workflow">
     </a>
