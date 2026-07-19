@@ -15,3 +15,14 @@ tasks:
     cmds:
       - golangci-lint run
     desc: "Lint the code"
+
+  docker:
+    interactive: true
+    vars:
+      IMAGE: qrack
+    cmds:
+      - git submodule update --init --recursive
+      - docker build -t {{.IMAGE}} -f .devcontainer/Dockerfile .
+      - docker run --rm -it {{.IMAGE}}
+      - docker rmi {{.IMAGE}}
+    desc: "Build the Docker image, run it, then remove the image"

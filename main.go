@@ -11,6 +11,7 @@ import (
 	"sync/atomic"
 
 	"github.com/charmbracelet/bubbles/progress"
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -21,6 +22,17 @@ var (
 	notFoundStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	errorStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("196"))
 	quitTextStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+
+	// runningPulse cycles the "Qrack is running..." label through a
+	// breathing gradient while the crack is in progress.
+	runningPulse = []lipgloss.Style{
+		lipgloss.NewStyle().Foreground(lipgloss.Color("25")),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("31")),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("37")),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("51")),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("37")),
+		lipgloss.NewStyle().Foreground(lipgloss.Color("31")),
+	}
 )
 
 type model struct {
@@ -29,6 +41,8 @@ type model struct {
 	foundPassword      string
 	err                error
 	progress           progress.Model
+	spinner            spinner.Model
+	pulseFrame         int
 	quitting           bool
 	width              int
 	height             int
@@ -39,7 +53,7 @@ type foundMsg struct{ password string }
 type errorMsg struct{ err error }
 
 func (m model) Init() tea.Cmd {
-	return nil
+	return m.spinner.Tick
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -98,6 +112,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.progress = progressModel.(progress.Model)
 		return m, cmd
 
+	case spinner.TickMsg:
+		if m.quitting {
+			return m, nil
+		}
+		m.pulseFrame++
+		spinnerModel, cmd := m.spinner.Update(msg)
+		m.spinner = spinnerModel
+		return m, cmd
+
 	default:
 		return m, nil
 	}
@@ -116,8 +139,11 @@ func (m model) View() string {
 		return docStyle.Render(s)
 	}
 
+	pulseStyle := runningPulse[m.pulseFrame%len(runningPulse)]
+	running := m.spinner.View() + " " + pulseStyle.Render("Qrack is running...")
+
 	return docStyle.Render(
-		"Qrack is running...\n\n" +
+		running + "\n\n" +
 			m.progress.View() + "\n\n" +
 			fmt.Sprintf("Processed: %d/%d", atomic.LoadInt64(&m.processedPasswords), m.totalPasswords) + "\n\n" +
 			quitTextStyle.Render("(Press 'q' to quit)"),
@@ -157,9 +183,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	s := spinner.New()
+	s.Spinner = spinner.Dot
+
 	p := tea.NewProgram(model{
 		totalPasswords: totalPasswords,
 		progress:       progress.New(progress.WithDefaultGradient()),
+		spinner:        s,
 	})
 
 	go runCracker(p, dictPath, binPath, pattern, concurrency)
